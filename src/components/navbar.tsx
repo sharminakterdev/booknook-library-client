@@ -22,17 +22,21 @@ export function Navbar({ user, isLoggedIn }: NavbarProps) {
   const links = [
     { name: "Home", href: "/" },
     { name: "All Books", href: "/books" },
-    ...(isLoggedIn
-      ? [
-          { name: "Add Book", href: "/add-book" },
+
+     { name: "Add Book", href: "/add-book" },
           { name: "My Books", href: "/my-books" },
-          { name: "My Borrows", href: "/my-borrows" },
-        ]
-      : []),
+        { name: "My Borrows", href: "/my-borrows" }
+  //   ...(isLoggedIn
+  //     ? [
+  //         { name: "Add Book", href: "/add-book" },
+  //         { name: "My Books", href: "/my-books" },
+  //         { name: "My Borrows", href: "/my-borrows" },
+  //       ]
+  //     : []),
   ]
 
   return (
-    <header className="fixed top-0 left-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
+<header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
       <nav className="mx-auto flex h-[100px] max-w-[1560px] items-center justify-between px-6 lg:px-8">
 
         {/* Logo */}

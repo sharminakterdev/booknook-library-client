@@ -1,119 +1,112 @@
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
+"use client";
 
-import Link from 'next/link';
-import { useRef } from 'react';
+import Link from "next/link";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Pagination, EffectFade } from "swiper/modules";
+
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/effect-fade";
+
+const slides = [
+  {
+    subtitle: "DISCOVER YOUR NEXT STORY",
+    title: "Every Book Opens a New World",
+    description:
+      "Explore fascinating stories, discover new ideas, and find your next favorite book in our digital library.",
+    image:
+      "https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2000",
+  },
+  {
+    subtitle: "A WORLD OF KNOWLEDGE",
+    title: "Read More. Dream Bigger.",
+    description:
+      "Expand your knowledge and imagination with our collection of inspiring books and timeless stories.",
+    image:
+      "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2000",
+  },
+  {
+    subtitle: "YOUR NEXT FAVORITE BOOK",
+    title: "Stories Worth Sharing",
+    description:
+      "Find meaningful stories, explore different categories, and make every reading moment special.",
+    image:
+      "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=2000",
+  },
+];
 
 export function HeroSlider() {
-  const swiperRef = useRef<any>(null);
-
-  const prevSlide = () => {
-    if (swiperRef.current) swiperRef.current.slidePrev();
-  };
-
-  const nextSlide = () => {
-    if (swiperRef.current) swiperRef.current.slideNext();
-  };
-
   return (
-    <section className="relative overflow-hidden mb-12 max-w-7xl mx-auto">
+    <section className="w-full">
       <Swiper
-        ref={swiperRef}
-        loop
+        modules={[Autoplay, Pagination, EffectFade]}
+        effect="fade"
+        fadeEffect={{ crossFade: true }}
         autoplay={{
-          delay: 5000,
+          delay: 4500,
           disableOnInteraction: false,
         }}
-        spaceBetween={30}
-        navigation={{ enabled: true }}
+        loop
         pagination={{ clickable: true }}
-        className="hero-slider"
+        className="book-hero-swiper"
       >
-        {/* Slide 1 */}
-        <SwiperSlide className="hero-slider__slide bg-teal-50 rounded-2xl p-8 shadow-2xl flex flex-col justify-center min-h-[460px] relative">
-          <img
-            src="https://picsum.photos/seed/book/1/800/500?random=1"
-            alt="Curated collection of books"
-            className="w-full h-48 object-cover rounded-xl mb-6 border-2 border-white/20"
-          />
-          <div className="flex flex-col items-center text-center max-w-2xl">
-            <h2 className="text-5xl font-serif text-teal-900 mb-4 tracking-tighter">
-              Discover Your Next Read
-            </h2>
-            <p className="text-teal-600 text-lg mb-8 leading-relaxed max-w-xl">
-              Explore a curated collection of literary treasures handpicked for curious readers who appreciate timeless stories and fresh voices alike.
-            </p>
-            <Link
-              href="/books"
-              className="inline-block bg-teal-600 text-white font-medium rounded-full px-8 py-3 hover:bg-teal-500 transition-colors duration-200"
+        {slides.map((slide, index) => (
+          <SwiperSlide key={index}>
+            <div
+              className="relative flex min-h-[480px] items-center bg-cover bg-center px-6 py-20 md:min-h-[580px] md:px-16 lg:px-24"
+              style={{ backgroundImage: `url(${slide.image})` }}
             >
-              Browse Books
-            </Link>
-          </div>
-        </SwiperSlide>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#102E25]/95 via-[#102E25]/75 to-[#102E25]/10" />
 
-        {/* Slide 2 */}
-        <SwiperSlide className="hero-slider__slide bg-teal-50 rounded-2xl p-8 shadow-2xl flex flex-col justify-center min-h-[460px] relative">
-          <img
-            src="https://picsum.photos/seed/book/2/800/500?random=2"
-            alt="Timeless classics on display"
-            className="w-full h-48 object-cover rounded-xl mb-6 border-2 border-white/20"
-          />
-          <div className="flex flex-col items-center text-center max-w-2xl">
-            <h2 className="text-5xl font-serif text-teal-900 mb-4 tracking-tighter">
-              Timeless Classics
-            </h2>
-            <p className="text-teal-600 text-lg mb-8 leading-relaxed max-w-xl">
-              From Austen to Hemingway, rediscover the stories that have shaped literature for generations and continue to inspire readers today.
-            </p>
-            <Link
-              href="/books"
-              className="inline-block bg-teal-600 text-white font-medium rounded-full px-8 py-3 hover:bg-teal-500 transition-colors duration-200"
-            >
-              Browse Books
-            </Link>
-          </div>
-        </SwiperSlide>
+              <div className="relative z-10 max-w-2xl text-white">
+                <p className="mb-5 text-sm font-semibold tracking-[4px] text-[#C5E5A0]">
+                  {slide.subtitle}
+                </p>
 
-        {/* Slide 3 */}
-        <SwiperSlide className="hero-slider__slide bg-teal-50 rounded-2xl p-8 shadow-2xl flex flex-col justify-center min-h-[460px] relative">
-          <img
-            src="https://picsum.photos/seed/book/3/800/500?random=3"
-            alt="Modern authors and contemporary literature"
-            className="w-full h-48 object-cover rounded-xl mb-6 border-2 border-white/20"
-          />
-          <div className="flex flex-col items-center text-center max-w-2xl">
-            <h2 className="text-5xl font-serif text-teal-900 mb-4 tracking-tighter">
-              Modern Voices
-            </h2>
-            <p className="text-teal-600 text-lg mb-8 leading-relaxed max-w-xl">
-              Discover fresh perspectives from today's most exciting contemporary authors and literary innovators pushing boundaries.
-            </p>
-            <Link
-              href="/books"
-              className="inline-block bg-teal-600 text-white font-medium rounded-full px-8 py-3 hover:bg-teal-500 transition-colors duration-200"
-            >
-              Browse Books
-            </Link>
-          </div>
-        </SwiperSlide>
+                <h1 className="mb-6 text-4xl font-bold leading-tight md:text-6xl">
+                  {slide.title}
+                </h1>
 
-        {/* Navigation arrows inside Swiper */}
-        <div
-          className="swiper-button-prev absolute top-1/2 -left-4 -translate-y-1/2 bg-teal-100 text-teal-600 rounded-full p-2 hover:bg-teal-200 transition-colors"
-          onClick={prevSlide}
-          aria-label="Previous slide"
-        >
-          ←
-        </div>
-        <div
-          className="swiper-button-next absolute top-1/2 right-4 -translate-y-1/2 bg-teal-100 text-teal-600 rounded-full p-2 hover:bg-teal-200 transition-colors"
-          onClick={nextSlide}
-          aria-label="Next slide"
-        >
-          →
-        </div>
+                <p className="mb-9 max-w-xl text-base leading-8 text-gray-200 md:text-lg">
+                  {slide.description}
+                </p>
+
+                <Link
+                  href="/books"
+                  className="inline-flex items-center gap-3 rounded-full bg-[#C5E5A0] px-8 py-4 font-semibold text-[#173C2D] transition hover:bg-white"
+                >
+                  Browse Books
+                  <span>→</span>
+                </Link>
+              </div>
+
+              <div className="absolute bottom-12 right-10 z-10 hidden text-7xl font-bold text-white/30 md:block">
+                0{index + 1}
+              </div>
+            </div>
+          </SwiperSlide>
+        ))}
       </Swiper>
+
+      <style jsx global>{`
+        .book-hero-swiper .swiper-pagination {
+          bottom: 25px !important;
+        }
+
+        .book-hero-swiper .swiper-pagination-bullet {
+          width: 28px;
+          height: 5px;
+          border-radius: 10px;
+          background: #ffffff;
+          opacity: 0.5;
+        }
+
+        .book-hero-swiper .swiper-pagination-bullet-active {
+          width: 45px;
+          background: #c5e5a0;
+          opacity: 1;
+        }
+      `}</style>
     </section>
   );
 }
