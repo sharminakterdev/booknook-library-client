@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
+import Footer from "@/components/footer";
+import { NavigationMenuBackdrop } from "@base-ui/react";
 import { Navbar } from "@/components/navbar";
-import {Footer} from "../components/footer";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -28,6 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
 <Navbar/>
 <Footer/>
+
 
 
       </body>

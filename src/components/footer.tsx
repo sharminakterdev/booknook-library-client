@@ -124,3 +124,145 @@
 //     </footer>
 //   )
 // }
+import Link from "next/link";
+
+import {
+  BookOpen,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  MessageCircle,
+  Camera,
+} from "lucide-react";
+
+import { FaFacebookF, FaTwitter } from "react-icons/fa";
+
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+
+export default function Footer() {
+  return (
+    <footer className="bg-gray-900 text-gray-300">
+      <div className="max-w-7xl mx-auto px-6 py-14">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+
+          {/* Logo */}
+          <div>
+            <Link href="/" className="flex items-center gap-2 mb-5">
+              <BookOpen className="w-8 h-8 text-green-500" />
+              <h2 className="text-2xl font-bold text-white">
+                Book<span className="text-green-500">Nook</span>
+              </h2>
+            </Link>
+
+            <p className="text-sm leading-7 text-gray-400">
+              Discover your next favorite book with BookNook.
+              Explore, borrow, and share knowledge with our
+              growing community of book lovers.
+            </p>
+          </div>
+
+          {/* Quick Links */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-5">
+              Quick Links
+            </h3>
+
+            <ul className="space-y-3 text-sm">
+              {[
+                ["Home", "/"],
+                ["All Books", "/books"],
+                ["Add Book", "/add-book"],
+                ["My Books", "/my-books"],
+                ["My Borrows", "/my-borrows"],
+              ].map(([name, href]) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className="hover:text-green-500 transition-colors"
+                  >
+                    {name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-5">
+              Contact Us
+            </h3>
+
+            <ul className="space-y-4 text-sm">
+              <li className="flex items-center gap-3">
+                <Mail className="w-4 h-4 text-green-500" />
+                <a href="mailto:hello@booknook.com">
+                  hello@booknook.com
+                </a>
+              </li>
+
+              <li className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-green-500" />
+                <a href="tel:+8801700000000">
+                  +880 1700-000000
+                </a>
+              </li>
+
+              <li className="flex items-center gap-3">
+                <MapPin className="w-4 h-4 text-green-500" />
+                <span>Dhaka, Bangladesh</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Social Links */}
+         <div className="flex gap-3">
+  <Button
+    asChild
+    size="icon"
+    variant="secondary"
+    className="rounded-full bg-gray-800 text-white hover:bg-green-600"
+  >
+    <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+      <FaFacebookF />
+    </a>
+  </Button>
+
+  <Button
+    asChild
+    size="icon"
+    variant="secondary"
+    className="rounded-full bg-gray-800 text-white hover:bg-green-600"
+  >
+    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+    <Camera />
+    </a>
+  </Button>
+
+  <Button
+    asChild
+    size="icon"
+    variant="secondary"
+    className="rounded-full bg-gray-800 text-white hover:bg-green-600"
+  >
+    <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+      <FaTwitter />
+    </a>
+  </Button>
+</div>
+
+        </div>
+
+        <Separator className="my-10 bg-gray-700" />
+
+        <p className="text-sm text-gray-400 text-center">
+          © 2026 BookNook. All rights reserved.
+        </p>
+
+      </div>
+    </footer>
+  );
+}
