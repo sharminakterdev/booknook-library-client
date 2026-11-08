@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import Footer from "@/components/footer";
 import { Navbar } from "@/components/navbar";
@@ -35,6 +37,7 @@ export default function RootLayout({
         <main className="flex-1">
           {children}
         </main>
+         <ToastContainer position="top-right" autoClose={3000} />
 
         <Footer />
       </body>

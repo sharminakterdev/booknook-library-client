@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BookOpen, Image as ImageIcon, ArrowLeft, Plus } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { toast } from "react-toastify";
 import {
   Select,
   SelectTrigger,
@@ -41,24 +42,46 @@ export default function AddBookPage() {
     }
   };
 
-const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
- const res = await fetch ("http://localhost:8000/add-book",{
-  method:"POST",
-  headers:{
-    "Content-Type":"application/json",
-  },
-  body:JSON.stringify(formData)
- })
- const data=await res.json()
- console.log(data)
-  // console.log("Book Form Data:", formData);
 
   setIsSubmitting(true);
 
-  setTimeout(() => {
+  try {
+    const res = await fetch("http://localhost:8000/add-book", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      toast.error(data.message || "Failed to add book!");
+      return;
+    }
+
+    toast.success("Book added successfully! 📚");
+
+    setFormData({
+      title: "",
+      author: "",
+      category: "",
+      coverImage: "",
+      description: "",
+      totalCopies: "1",
+    });
+
+    setPreviewUrl(undefined);
+
+  } catch (error) {
+    console.log(error);
+    toast.error("Something went wrong!");
+  } finally {
     setIsSubmitting(false);
-  }, 1500);
+  }
 };
   const categories = [
     "Fiction",
