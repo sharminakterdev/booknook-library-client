@@ -41,15 +41,25 @@ export default function AddBookPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+ const res = await fetch ("http://localhost:8000/add-book",{
+  method:"POST",
+  headers:{
+    "Content-Type":"application/json",
+  },
+  body:JSON.stringify(formData)
+ })
+ const data=await res.json()
+ console.log(data)
+  // console.log("Book Form Data:", formData);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-    }, 1500);
-  };
+  setIsSubmitting(true);
 
+  setTimeout(() => {
+    setIsSubmitting(false);
+  }, 1500);
+};
   const categories = [
     "Fiction",
     "Non-Fiction",
@@ -62,6 +72,7 @@ export default function AddBookPage() {
     "Young Adult",
     "Poetry",
   ];
+
 
   return (
     <div className="min-h-screen bg-[#F5F7F2] px-4 py-14 sm:px-6 lg:px-8">
@@ -180,33 +191,29 @@ export default function AddBookPage() {
               />
             </div>
 
-            {/* Category */}
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-[#315C50]">
-                Book Category
-              </label>
+          
+{/* Category */}
+<div>
+  <label className="mb-2 block text-sm font-semibold text-[#315C50]">
+    Book Category
+  </label>
 
-              <Select
-                value={formData.category}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, category: value })
-                }
-                required
-              >
-                <SelectTrigger className="h-12 w-full rounded-xl border-[#DCE7DF] bg-[#FAFCFA] px-4">
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
+  <Input
+    list="book-categories"
+    name="category"
+    value={formData.category}
+    onChange={handleChange}
+    placeholder="Select or type a category"
+    required
+    className="h-12 rounded-xl border-[#DCE7DF] bg-[#FAFCFA] px-4 text-gray-800"
+  />
 
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
+  <datalist id="book-categories">
+    {categories.map((category) => (
+      <option key={category} value={category} />
+    ))}
+  </datalist>
+</div>
             {/* Cover Image URL */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#315C50]">

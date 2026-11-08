@@ -138,7 +138,7 @@ import {
 
 import { FaFacebookF, FaTwitter } from "react-icons/fa";
 
-import { Button } from "@/components/ui/button";
+
 import { Separator } from "@/components/ui/separator";
 
 export default function Footer() {
@@ -219,39 +219,43 @@ export default function Footer() {
           </div>
 
           {/* Social Links */}
-         <div className="flex gap-3">
-  <Button
-    asChild
-    size="icon"
-    variant="secondary"
-    className="rounded-full bg-gray-800 text-white hover:bg-green-600"
-  >
-    <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+       {/* Social Links */}
+<div>
+  <h3 className="text-lg font-semibold text-white mb-5">
+    Follow Us
+  </h3>
+
+  <div className="flex gap-3">
+    <a
+      href="https://facebook.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Facebook"
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-white transition hover:bg-green-600"
+    >
       <FaFacebookF />
     </a>
-  </Button>
 
-  <Button
-    asChild
-    size="icon"
-    variant="secondary"
-    className="rounded-full bg-gray-800 text-white hover:bg-green-600"
-  >
-    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
-    <Camera />
+    <a
+      href="https://instagram.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Instagram"
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-white transition hover:bg-green-600"
+    >
+      <Camera size={18} />
     </a>
-  </Button>
 
-  <Button
-    asChild
-    size="icon"
-    variant="secondary"
-    className="rounded-full bg-gray-800 text-white hover:bg-green-600"
-  >
-    <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+    <a
+      href="https://twitter.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Twitter"
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-white transition hover:bg-green-600"
+    >
       <FaTwitter />
     </a>
-  </Button>
+  </div>
 </div>
 
         </div>

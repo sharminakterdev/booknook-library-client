@@ -21,7 +21,7 @@ export function Navbar({ user, isLoggedIn }: NavbarProps) {
 
   const links = [
     { name: "Home", href: "/" },
-    { name: "All Books", href: "/books" },
+    { name: "All Books", href: "/all-books" },
 
      { name: "Add Book", href: "/add-book" },
           { name: "My Books", href: "/my-books" },
