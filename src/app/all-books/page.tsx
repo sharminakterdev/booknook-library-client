@@ -98,7 +98,9 @@ const AllBook = async () => {
                       className="h-full w-auto max-w-full object-contain transition-transform duration-500 group-hover:scale-110"
                     />
                   ) : (
-                    <div className="text-gray-400">No Cover Available</div>
+                    <div className="text-gray-400">
+                      No Cover Available
+                    </div>
                   )}
 
                   <span className="absolute left-4 top-4 rounded-full bg-[#153D35] px-3 py-1.5 text-xs font-semibold text-white">
@@ -127,7 +129,7 @@ const AllBook = async () => {
                   </div>
 
                   <Link
-                    href={`/all-books/${book._id}`}
+                    href={`/books/${book._id}`}
                     className="block w-full rounded-xl bg-[#153D35] py-3 text-center text-sm font-semibold text-white transition-all hover:bg-[#B18A4A]"
                   >
                     View Details →
