@@ -1,7 +1,12 @@
 
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+
+import { authClient } from "@/lib/auth-client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,21 +27,108 @@ import {
 import { Input } from "@/components/ui/input";
 
 export default function RegisterPage() {
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Email Registration
   const handleRegister = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
 
-    const formData = new FormData(e.currentTarget);
-    const user = Object.fromEntries(formData.entries());
+    if (loading || googleLoading) return;
 
-    // Password matching validation
-    if (user.password !== user.confirmPassword) {
-      alert("Password and Confirm Password do not match!");
+    const formData = new FormData(e.currentTarget);
+
+    const name = String(formData.get("name") || "").trim();
+    const email = String(formData.get("email") || "").trim();
+    const image = String(formData.get("image") || "").trim();
+    const password = String(formData.get("password") || "");
+    const confirmPassword = String(
+      formData.get("confirmPassword") || ""
+    );
+
+    if (!name) {
+      toast.error("Please enter your full name!");
       return;
     }
 
-    console.log(user);
+    if (!email) {
+      toast.error("Please enter your email!");
+      return;
+    }
+
+    if (!image) {
+      toast.error("Please enter your profile photo URL!");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match!");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters!");
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      toast.error("Password must contain an uppercase letter!");
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      toast.error("Password must contain a lowercase letter!");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await authClient.signUp.email({
+        name,
+        email,
+        image,
+        password,
+      });
+
+      if (error) {
+        console.error("Registration Error:", error);
+        toast.error(error.message || "Registration failed!");
+        return;
+      }
+
+      if (data) {
+        toast.success("Registration successful!");
+        router.push("/login");
+      }
+    } catch (error) {
+      console.error("Registration failed:", error);
+      toast.error("Something went wrong!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Google Registration
+  const handleGoogleSignUp = async () => {
+    if (loading || googleLoading) return;
+
+    try {
+      setGoogleLoading(true);
+
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+    } catch (error) {
+      console.error("Google Sign Up Error:", error);
+      toast.error("Google sign up failed!");
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -70,6 +162,7 @@ export default function RegisterPage() {
                   name="name"
                   type="text"
                   placeholder="Enter your full name"
+                  autoComplete="name"
                   required
                   className="h-12 rounded-xl border-[#DCE7DF] bg-[#FAFCFA]"
                 />
@@ -92,15 +185,15 @@ export default function RegisterPage() {
                 />
               </Field>
 
-              {/* Photo URL */}
+              {/* Profile Photo */}
               <Field>
-                <FieldLabel htmlFor="photo">
+                <FieldLabel htmlFor="image">
                   Profile Photo URL
                 </FieldLabel>
 
                 <Input
-                  id="photo"
-                  name="photo"
+                  id="image"
+                  name="image"
                   type="url"
                   placeholder="https://example.com/photo.jpg"
                   required
@@ -126,8 +219,8 @@ export default function RegisterPage() {
                 />
 
                 <FieldDescription>
-                  Password must contain uppercase and lowercase letters
-                  and at least 6 characters.
+                  Password must contain uppercase and lowercase
+                  letters and at least 6 characters.
                 </FieldDescription>
               </Field>
 
@@ -153,24 +246,57 @@ export default function RegisterPage() {
               <Field>
                 <Button
                   type="submit"
+                  disabled={loading || googleLoading}
                   className="h-12 w-full rounded-xl bg-[#237A61] text-base font-semibold text-white hover:bg-[#195E49]"
                 >
-                  Create Account
+                  {loading ? "Creating Account..." : "Create Account"}
                 </Button>
-
-                <FieldDescription className="text-center">
-                  Already have an account?{" "}
-                  <Link
-                    href="/login"
-                    className="font-semibold text-[#237A61] underline-offset-4 hover:underline"
-                  >
-                    Login
-                  </Link>
-                </FieldDescription>
               </Field>
 
             </FieldGroup>
           </form>
+
+          {/* OR Divider */}
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-200" />
+            </div>
+
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-sm text-gray-500">
+                OR
+              </span>
+            </div>
+          </div>
+
+          {/* Google Sign Up */}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading || googleLoading}
+            onClick={handleGoogleSignUp}
+            className="h-12 w-full rounded-xl border-[#DCE7DF] bg-white text-base font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            <span className="mr-2 text-lg font-bold text-[#4285F4]">
+              G
+            </span>
+
+            {googleLoading
+              ? "Connecting to Google..."
+              : "Continue with Google"}
+          </Button>
+
+          {/* Login Link */}
+          <FieldDescription className="mt-5 text-center">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="font-semibold text-[#237A61] underline-offset-4 hover:underline"
+            >
+              Login
+            </Link>
+          </FieldDescription>
+
         </CardContent>
       </Card>
 
@@ -186,6 +312,7 @@ export default function RegisterPage() {
         </a>
         .
       </FieldDescription>
+
     </div>
   );
 }

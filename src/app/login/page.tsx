@@ -1,4 +1,12 @@
-import { cn } from "@/lib/utils";
+
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import Link from "next/link";
+
+import { authClient } from "@/lib/auth-client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,18 +26,79 @@ import {
 
 import { Input } from "@/components/ui/input";
 
-export default function LoginForm({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+export default function LoginForm() {
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Email and Password Login
+  const handleLogin = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+
+    if (loading || googleLoading) return;
+
+    const formData = new FormData(e.currentTarget);
+
+    const email = String(formData.get("email") || "").trim();
+    const password = String(formData.get("password") || "");
+
+    if (!email || !password) {
+      toast.error("Please enter email and password!");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await authClient.signIn.email({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("Login Error:", error);
+        toast.error(error.message || "Invalid email or password!");
+        return;
+      }
+
+      if (data) {
+        toast.success("Login successful!");
+
+        router.push("/");
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      toast.error("Something went wrong!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Google Login
+  const handleGoogleLogin = async () => {
+    if (loading || googleLoading) return;
+
+    try {
+      setGoogleLoading(true);
+
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+    } catch (error) {
+      console.error("Google Login Error:", error);
+      toast.error("Google login failed!");
+      setGoogleLoading(false);
+    }
+  };
+
   return (
-    <div
-      className={cn(
-        "flex min-h-screen w-full flex-col items-center justify-center gap-6 bg-[#F5F7F2] px-4 py-10",
-        className
-      )}
-      {...props}
-    >
+    <div className="flex min-h-screen w-full flex-col items-center justify-center gap-6 bg-[#F5F7F2] px-4 py-10">
+
       {/* Login Card */}
       <Card className="w-full max-w-md rounded-2xl border border-[#E0E9E1] bg-white shadow-lg">
 
@@ -44,7 +113,9 @@ export default function LoginForm({
         </CardHeader>
 
         <CardContent>
-          <form>
+
+          {/* Email Login Form */}
+          <form onSubmit={handleLogin}>
             <FieldGroup>
 
               {/* Email */}
@@ -55,8 +126,10 @@ export default function LoginForm({
 
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="Enter your email"
+                  autoComplete="email"
                   required
                   className="h-12 rounded-xl border-[#DCE7DF] bg-[#FAFCFA]"
                 />
@@ -69,18 +142,17 @@ export default function LoginForm({
                     Password
                   </FieldLabel>
 
-                  <a
-                    href="#"
-                    className="text-sm font-medium text-[#237A61] hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
+                  <span className="text-sm text-gray-400">
+                    Forgot password?
+                  </span>
                 </div>
 
                 <Input
                   id="password"
+                  name="password"
                   type="password"
                   placeholder="Enter your password"
+                  autoComplete="current-password"
                   required
                   className="h-12 rounded-xl border-[#DCE7DF] bg-[#FAFCFA]"
                 />
@@ -90,24 +162,57 @@ export default function LoginForm({
               <Field>
                 <Button
                   type="submit"
+                  disabled={loading || googleLoading}
                   className="h-12 w-full rounded-xl bg-[#237A61] text-base font-semibold text-white hover:bg-[#195E49]"
                 >
-                  Login
+                  {loading ? "Logging in..." : "Login"}
                 </Button>
-
-                <FieldDescription className="text-center">
-                  Don&apos;t have an account?{" "}
-                  <a
-                    href="/register"
-                    className="font-semibold text-[#237A61] underline-offset-4 hover:underline"
-                  >
-              Register
-                  </a>
-                </FieldDescription>
               </Field>
 
             </FieldGroup>
           </form>
+
+          {/* OR Divider */}
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-200" />
+            </div>
+
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-sm text-gray-500">
+                OR
+              </span>
+            </div>
+          </div>
+
+          {/* Google Login Button */}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading || googleLoading}
+            onClick={handleGoogleLogin}
+            className="h-12 w-full rounded-xl border-[#DCE7DF] bg-white text-base font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            <span className="mr-2 text-lg font-bold text-[#4285F4]">
+              G
+            </span>
+
+            {googleLoading
+              ? "Connecting to Google..."
+              : "Continue with Google"}
+          </Button>
+
+          {/* Register Link */}
+          <FieldDescription className="mt-5 text-center">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/register"
+              className="font-semibold text-[#237A61] underline-offset-4 hover:underline"
+            >
+              Register
+            </Link>
+          </FieldDescription>
+
         </CardContent>
       </Card>
 
@@ -127,3 +232,5 @@ export default function LoginForm({
     </div>
   );
 }
+
+
