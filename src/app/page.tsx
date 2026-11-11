@@ -1,7 +1,7 @@
 
 import { HeroSlider } from "@/components/home/HeroSlider";
 import NewArrivals from "@/components/home/NewArrivals";
-// import WhyChooseUs from "@/components/home/WhyChooseUs";
+import WhyChooseUs from "@/components/home/WhyChooseUs";
 // import HowBorrowingWorks from "@/components/home/HowBorrowingWorks";
 
 interface Book {
@@ -40,7 +40,7 @@ export default async function Home() {
       {/* Dynamic New Arrivals */}
       <NewArrivals books={books} />
 
-     
+       <WhyChooseUs />
 
       
     </main>
