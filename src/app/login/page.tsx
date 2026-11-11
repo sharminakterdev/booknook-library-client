@@ -53,10 +53,15 @@ export default function LoginForm() {
     try {
       setLoading(true);
 
+      console.log("Login Started");
+      console.log("Email:", email);
+
       const { data, error } = await authClient.signIn.email({
         email,
         password,
       });
+
+      console.log("Login Response:", { data, error });
 
       if (error) {
         console.error("Login Error:", error);
@@ -65,13 +70,16 @@ export default function LoginForm() {
       }
 
       if (data) {
+        console.log("Login Successful!");
+        console.log("User Data:", data.user);
+
         toast.success("Login successful!");
 
         router.push("/");
         router.refresh();
       }
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("Login Failed:", error);
       toast.error("Something went wrong!");
     } finally {
       setLoading(false);
@@ -85,13 +93,19 @@ export default function LoginForm() {
     try {
       setGoogleLoading(true);
 
-      await authClient.signIn.social({
+      const { error } = await authClient.signIn.social({
         provider: "google",
         callbackURL: "/",
       });
+
+      if (error) {
+        console.error("Google Login Error:", error);
+        toast.error(error.message || "Google login failed!");
+        setGoogleLoading(false);
+      }
     } catch (error) {
-      console.error("Google Login Error:", error);
-      toast.error("Google login failed!");
+      console.error("Google Login Failed:", error);
+      toast.error("Something went wrong!");
       setGoogleLoading(false);
     }
   };
@@ -232,5 +246,3 @@ export default function LoginForm() {
     </div>
   );
 }
-
-

@@ -22,6 +22,7 @@
 
 // export default DetailPage ;
 import Image from "next/image";
+import BorrowButton from "@/components/books/BorrowButton";
 
 interface Props {
   params: Promise<{
@@ -37,6 +38,7 @@ interface Book {
   coverImage: string;
   description: string;
   totalCopies: number;
+  availableCopies?: number;
 }
 
 const DetailPage = async ({ params }: Props) => {
@@ -102,16 +104,17 @@ const DetailPage = async ({ params }: Props) => {
                 </span>{" "}
                 {book.totalCopies}
               </p>
+
+              <p>
+                <span className="font-semibold text-[#153D35]">
+                  Available Copies:
+                </span>{" "}
+                {book.availableCopies ?? book.totalCopies}
+              </p>
             </div>
 
-            {/* Borrow Button */}
-            <button
-              type="button"
-              disabled
-              className="mt-8 w-full cursor-not-allowed rounded-xl bg-[#153D35] py-4 font-semibold text-white opacity-70"
-            >
-              Borrow This Book
-            </button>
+            {/* Borrow Button & Modal */}
+            <BorrowButton book={book} />
           </div>
         </div>
       </div>

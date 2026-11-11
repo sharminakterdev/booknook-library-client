@@ -32,7 +32,7 @@ interface Book {
 }
 
 const AllBook = async () => {
-  const res = await fetch("http://localhost:8000/all-book");
+  const res = await fetch("http://localhost:8000/books");
 
   if (!res.ok) {
     throw new Error("Failed to fetch books");

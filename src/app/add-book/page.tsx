@@ -1,327 +1,563 @@
-
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { BookOpen, Image as ImageIcon, ArrowLeft, Plus } from "lucide-react";
-
-import { Input } from "@/components/ui/input";
-import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+  ArrowLeft,
+  BookOpen,
+  Image as ImageIcon,
+  Plus,
+  Sparkles,
+  Library,
+  UserRound,
+  CheckCircle2,
+  Link as LinkIcon,
+  X,
+} from "lucide-react";
+import { toast } from "react-toastify";
+
+import { authClient } from "@/lib/auth-client";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+const categories = [
+  "Fiction",
+  "Science",
+  "History",
+  "Kids",
+  "Others",
+];
+
+type FormDataType = {
+  title: string;
+  author: string;
+  category: string;
+  description: string;
+  totalCopies: string;
+  imageUrl: string;
+};
 
 export default function AddBookPage() {
-  const [formData, setFormData] = useState({
+  const router = useRouter();
+
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
+
+  const [formData, setFormData] = useState<FormDataType>({
     title: "",
     author: "",
     category: "",
-    coverImage: "",
     description: "",
     totalCopies: "1",
+    imageUrl: "",
   });
 
-  const [previewUrl, setPreviewUrl] = useState<string | undefined>();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [imageError, setImageError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
+  // Handle input changes
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
 
-    setFormData({ ...formData, [name]: value });
-
-    if (name === "coverImage") {
-      setPreviewUrl(value);
-    }
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+  // Handle image URL and preview
+  const handleImageUrlChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const url = e.target.value;
 
-  setIsSubmitting(true);
+    setFormData((prev) => ({
+      ...prev,
+      imageUrl: url,
+    }));
 
-  try {
-    const res = await fetch("http://localhost:8000/add-book", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
+    setPreviewUrl(url.trim());
+    setImageError(false);
+  };
 
-    const data = await res.json();
+  // Remove image URL
+  const removeImage = () => {
+    setFormData((prev) => ({
+      ...prev,
+      imageUrl: "",
+    }));
 
-    if (!res.ok) {
-      toast.error(data.message || "Failed to add book!");
+    setPreviewUrl("");
+    setImageError(false);
+  };
+
+  // Submit book
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+
+    if (!user?.email) {
+      toast.error("Please login first.");
+      router.push("/login");
       return;
     }
 
-    toast.success("Book added successfully! 📚");
+    if (
+      !formData.title.trim() ||
+      !formData.author.trim() ||
+      !formData.category ||
+      !formData.description.trim() ||
+      !formData.imageUrl.trim()
+    ) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
 
-    setFormData({
-      title: "",
-      author: "",
-      category: "",
-      coverImage: "",
-      description: "",
-      totalCopies: "1",
-    });
+    if (!/^https?:\/\/.+/i.test(formData.imageUrl.trim())) {
+      toast.error("Please enter a valid image URL.");
+      return;
+    }
 
-    setPreviewUrl(undefined);
+    const copies = Number(formData.totalCopies);
 
-  } catch (error) {
-    console.log(error);
-    toast.error("Something went wrong!");
-  } finally {
-    setIsSubmitting(false);
+    if (!Number.isInteger(copies) || copies < 1) {
+      toast.error("Total copies must be at least 1.");
+      return;
+    }
+
+    if (imageError) {
+      toast.error("Please provide a working book cover image URL.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Updated property name to coverImage as required by backend schema
+      const bookData = {
+        title: formData.title.trim(),
+        author: formData.author.trim(),
+        category: formData.category,
+        coverImage: formData.imageUrl.trim(),
+        description: formData.description.trim(),
+        totalCopies: copies,
+        userName: user.name || "",
+        email: user.email,
+        createdAt: new Date().toISOString(),
+      };
+
+      const response = await fetch(`${API_URL}/add-book`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bookData),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          result?.message || "Failed to add book."
+        );
+      }
+
+      toast.success("Book added successfully!");
+
+      setFormData({
+        title: "",
+        author: "",
+        category: "",
+        description: "",
+        totalCopies: "1",
+        imageUrl: "",
+      });
+
+      setPreviewUrl("");
+      setImageError(false);
+
+      router.push("/my-books");
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Loading
+  if (isPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F7F0]">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#153D35] border-t-transparent" />
+          <p className="mt-4 text-sm text-gray-500">
+            Loading...
+          </p>
+        </div>
+      </div>
+    );
   }
-};
-  const categories = [
-    "Fiction",
-    "Non-Fiction",
-    "Science Fiction",
-    "Fantasy",
-    "Mystery",
-    "Biography",
-    "History",
-    "Children's Books",
-    "Young Adult",
-    "Poetry",
-  ];
 
+  // Login required
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F7F0] px-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
+          <BookOpen className="mx-auto h-12 w-12 text-[#153D35]" />
 
-  return (
-    <div className="min-h-screen bg-[#F5F7F2] px-4 py-14 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-3xl">
+          <h2 className="mt-5 text-2xl font-bold text-[#153D35]">
+            Login Required
+          </h2>
 
-        {/* Back Link */}
-        <Link
-          href="/books"
-          className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-[#477365] transition hover:text-[#1D604C]"
-        >
-          <ArrowLeft size={17} />
-          Back to All Books
-        </Link>
-
-        {/* Page Heading */}
-        <div className="mb-9 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#DCECE2] text-[#237A61]">
-            <BookOpen size={27} />
-          </div>
-
-          <p className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-[#67917C]">
-            BookNook Library
+          <p className="mt-2 text-gray-500">
+            Please login to add a new book to BookNook.
           </p>
 
-          <h1 className="text-3xl font-bold tracking-tight text-[#183F35] sm:text-4xl">
+          <Link
+            href="/login?callbackUrl=/add-book"
+            className="mt-6 inline-flex rounded-xl bg-[#153D35] px-6 py-3 font-semibold text-white transition hover:bg-[#B18A4A]"
+          >
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#F7F7F0] px-4 py-10 md:px-8">
+      <div className="mx-auto max-w-6xl">
+
+        {/* Back navigation */}
+        <Link
+          href="/"
+          className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition hover:text-[#153D35]"
+        >
+          <ArrowLeft size={17} />
+          Back to Home
+        </Link>
+
+        {/* Heading */}
+        <div className="mb-8">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#A58B54]">
+            <Sparkles size={16} />
+            YOUR DIGITAL LIBRARY
+          </div>
+
+          <h1 className="text-3xl font-bold tracking-tight text-[#153D35] md:text-4xl">
             Add a New Book
           </h1>
 
-          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#718078] sm:text-base">
-            Share a new story with our reading community. Fill in the details
-            below to add a book to your collection.
+          <p className="mt-3 max-w-xl text-gray-500">
+            Share your favorite books with the BookNook community.
+            Add the details and grow your library.
           </p>
         </div>
 
-        {/* Form Card */}
-        <div className="rounded-3xl border border-[#E0E9E1] bg-white p-5 shadow-[0_12px_45px_rgba(31,77,61,0.08)] sm:p-9 lg:p-11">
+        <div className="grid gap-8 lg:grid-cols-[0.8fr_1.5fr]">
 
-          <form onSubmit={handleSubmit} className="space-y-7">
+          {/* Information Panel */}
+          <aside className="relative overflow-hidden rounded-3xl bg-[#153D35] p-8 text-white">
+            <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-white/5" />
+            <div className="absolute -bottom-20 -left-12 h-64 w-64 rounded-full bg-white/5" />
 
-            {/* Cover Preview */}
-            <div>
-              <label className="mb-3 block text-sm font-semibold text-[#315C50]">
-                Book Cover Preview
-              </label>
+            <div className="relative z-10">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
+                <Library size={29} />
+              </div>
 
-              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#C9DCD0] bg-[#F8FBF8] px-4 py-7">
-                {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    alt="Book cover preview"
-                    className="h-64 w-44 rounded-xl object-cover shadow-lg"
-                  />
-                ) : (
-                  <div className="flex h-64 w-44 flex-col items-center justify-center rounded-xl border border-[#E1EBE3] bg-white text-center shadow-sm">
-                    <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F2EA] text-[#6B9A80]">
-                      <ImageIcon size={26} />
-                    </div>
+              <h2 className="mt-8 text-2xl font-bold leading-snug">
+                Every book has a story.
+                <br />
+                Share yours.
+              </h2>
 
-                    <BookOpen size={30} className="mb-2 text-[#A6BBAE]" />
+              <p className="mt-4 leading-7 text-white/65">
+                Add books to your collection and help other readers
+                discover their next favorite story.
+              </p>
 
-                    <p className="text-sm font-medium text-[#789083]">
-                      Book Cover
-                    </p>
-
-                    <p className="mt-1 text-xs text-[#A0AEA5]">
-                      Preview will appear here
-                    </p>
+              <div className="mt-10 space-y-5">
+                {[
+                  "Add your book details",
+                  "Provide a book cover URL",
+                  "Share with other readers",
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={19}
+                      className="shrink-0 text-[#C5A66B]"
+                    />
+                    <span className="text-sm text-white/85">
+                      {item}
+                    </span>
                   </div>
-                )}
+                ))}
+              </div>
 
-                <p className="mt-4 text-xs text-[#8A9A90]">
-                  Enter a cover image URL below
+              <div className="mt-12 rounded-2xl border border-white/10 bg-white/5 p-5">
+                <BookOpen size={25} className="text-[#C5A66B]" />
+
+                <p className="mt-3 text-sm leading-6 text-white/70">
+                  "A reader lives a thousand lives before he dies."
+                </p>
+
+                <p className="mt-2 text-xs text-white/40">
+                  — George R. R. Martin
+                </p>
+              </div>
+            </div>
+          </aside>
+
+          {/* Form */}
+          <section className="rounded-3xl border border-[#E8E5DA] bg-white p-6 shadow-sm md:p-9">
+            <div className="mb-7 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E5EDE8] text-[#153D35]">
+                <Plus size={23} />
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-[#153D35]">
+                  Book Information
+                </h2>
+                <p className="text-sm text-gray-400">
+                  Enter the details below
                 </p>
               </div>
             </div>
 
-            {/* Book Information */}
-            <div className="border-b border-[#E8EFE9] pb-3">
-              <h2 className="text-lg font-bold text-[#183F35]">
-                Book Information
-              </h2>
-              <p className="mt-1 text-sm text-[#87958C]">
-                Provide the basic details of your book.
-              </p>
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* Book Title */}
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-[#315C50]">
-                Book Title
-              </label>
+              {/* Title and Author */}
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Book Title *
+                  </label>
 
-              <Input
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="Enter book title"
-                required
-                className="h-12 rounded-xl border-[#DCE7DF] bg-[#FAFCFA] px-4 text-gray-800"
-              />
-            </div>
+                  <input
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    placeholder="Enter book title"
+                    className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:bg-white focus:ring-2 focus:ring-[#E5EDE8]"
+                    required
+                  />
+                </div>
 
-            {/* Author */}
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-[#315C50]">
-                Author Name
-              </label>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Author Name *
+                  </label>
 
-              <Input
-                name="author"
-                value={formData.author}
-                onChange={handleChange}
-                placeholder="Enter author name"
-                required
-                className="h-12 rounded-xl border-[#DCE7DF] bg-[#FAFCFA] px-4 text-gray-800"
-              />
-            </div>
+                  <input
+                    name="author"
+                    value={formData.author}
+                    onChange={handleChange}
+                    placeholder="Enter author name"
+                    className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:bg-white focus:ring-2 focus:ring-[#E5EDE8]"
+                    required
+                  />
+                </div>
+              </div>
 
-          
-{/* Category */}
-<div>
-  <label className="mb-2 block text-sm font-semibold text-[#315C50]">
-    Book Category
-  </label>
+              {/* Category and Copies */}
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Category *
+                  </label>
 
-  <Input
-    list="book-categories"
-    name="category"
-    value={formData.category}
-    onChange={handleChange}
-    placeholder="Select or type a category"
-    required
-    className="h-12 rounded-xl border-[#DCE7DF] bg-[#FAFCFA] px-4 text-gray-800"
-  />
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:ring-2 focus:ring-[#E5EDE8]"
+                    required
+                  >
+                    <option value="">Select category</option>
 
-  <datalist id="book-categories">
-    {categories.map((category) => (
-      <option key={category} value={category} />
-    ))}
-  </datalist>
-</div>
-            {/* Cover Image URL */}
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-[#315C50]">
-                Cover Image URL
-              </label>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <Input
-                name="coverImage"
-                value={formData.coverImage}
-                onChange={handleChange}
-                placeholder="https://example.com/book-cover.jpg"
-                required
-                className="h-12 rounded-xl border-[#DCE7DF] bg-[#FAFCFA] px-4 text-gray-800"
-              />
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Total Copies *
+                  </label>
 
-              <p className="mt-2 text-xs text-[#91A096]">
-                Paste an image URL to preview your book cover.
-              </p>
-            </div>
+                  <input
+                    type="number"
+                    name="totalCopies"
+                    min="1"
+                    value={formData.totalCopies}
+                    onChange={handleChange}
+                    placeholder="Enter copies"
+                    className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:ring-2 focus:ring-[#E5EDE8]"
+                    required
+                  />
+                </div>
+              </div>
 
-            {/* Description */}
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-[#315C50]">
-                Short Description
-              </label>
+              {/* Image URL */}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Book Cover Image URL *
+                </label>
 
-              <Textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Write a short description about the book..."
-                rows={5}
-                required
-                className="min-h-32 rounded-xl border-[#DCE7DF] bg-[#FAFCFA] px-4 py-3 text-gray-800"
-              />
-            </div>
+                <div className="relative">
+                  <LinkIcon
+                    size={18}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
 
-            {/* Total Copies */}
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-[#315C50]">
-                Total Copies
-              </label>
+                  <input
+                    type="url"
+                    name="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={handleImageUrlChange}
+                    placeholder="Paste your book image URL here..."
+                    className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#153D35] focus:bg-white focus:ring-2 focus:ring-[#E5EDE8]"
+                    required
+                  />
+                </div>
 
-              <Input
-                type="number"
-                name="totalCopies"
-                value={formData.totalCopies}
-                onChange={handleChange}
-                min="1"
-                required
-                className="h-12 rounded-xl border-[#DCE7DF] bg-[#FAFCFA] px-4 text-gray-800"
-              />
-            </div>
+                <p className="mt-2 text-xs text-gray-400">
+                  Paste an image URL to see the cover preview.
+                </p>
+              </div>
 
-            {/* Buttons */}
-            <div className="flex flex-col gap-3 border-t border-[#E8EFE9] pt-7 sm:flex-row">
-              <Button
+              {/* Image Preview */}
+              {previewUrl && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-gray-700">
+                      Book Cover Preview
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700"
+                    >
+                      <X size={15} />
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="relative flex h-64 items-center justify-center overflow-hidden rounded-2xl border border-[#E8E5DA] bg-[#F7F7F0] p-4">
+                    {imageError ? (
+                      <div className="text-center text-sm text-red-500">
+                        <ImageIcon className="mx-auto mb-2" size={30} />
+                        Image could not be loaded. Check the URL.
+                      </div>
+                    ) : (
+                      <img
+                        src={previewUrl}
+                        alt="Book cover preview"
+                        className="h-full max-w-full object-contain"
+                        onLoad={() => setImageError(false)}
+                        onError={() => setImageError(true)}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Book Description *
+                </label>
+
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={4}
+                  placeholder="Write a short description about this book..."
+                  className="w-full resize-none rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:bg-white focus:ring-2 focus:ring-[#E5EDE8]"
+                  required
+                />
+              </div>
+
+              {/* User Information */}
+              <div className="rounded-2xl border border-[#E5EDE8] bg-[#F7F7F0] p-5">
+                <div className="mb-4 flex items-center gap-2">
+                  <UserRound size={18} className="text-[#153D35]" />
+                  <h3 className="text-sm font-bold text-gray-800">
+                    Added By
+                  </h3>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-gray-500">
+                      Your Name
+                    </label>
+
+                    <input
+                      value={user.name || ""}
+                      readOnly
+                      className="w-full rounded-lg border border-[#E8E5DA] bg-white px-3 py-2.5 text-sm text-gray-600 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-gray-500">
+                      Your Email
+                    </label>
+
+                    <input
+                      value={user.email || ""}
+                      readOnly
+                      className="w-full rounded-lg border border-[#E8E5DA] bg-white px-3 py-2.5 text-sm text-gray-600 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button
                 type="submit"
-                disabled={isSubmitting}
-                className="h-12 flex-1 rounded-xl bg-[#237A61] px-6 text-base font-semibold text-white shadow-md transition hover:bg-[#195E49]"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#153D35] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#B18A4A] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting ? (
-                  "Adding Book..."
+                {loading ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Adding Book...
+                  </>
                 ) : (
                   <>
-                    <Plus size={18} className="mr-2" />
-                    Add Book
+                    <Plus size={19} />
+                    Add Book to Library
                   </>
                 )}
-              </Button>
-
-              <Link
-                href="/books"
-                className="flex h-12 items-center justify-center rounded-xl border border-[#C9DCD0] px-8 text-base font-semibold text-[#315C50] transition hover:bg-[#F0F7F2]"
-              >
-                Cancel
-              </Link>
-            </div>
-          </form>
+              </button>
+            </form>
+          </section>
         </div>
-
-        <p className="mt-6 text-center text-xs text-[#91A096]">
-          Made with care for every book lover · BookNook
-        </p>
       </div>
-    </div>
+    </main>
   );
 }
