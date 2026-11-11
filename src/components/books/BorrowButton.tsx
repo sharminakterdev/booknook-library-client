@@ -39,62 +39,74 @@ const BorrowButton = ({ book }: Props) => {
   };
 
   const handleBorrow = async () => {
-    if (!user) {
-      toast.error("Please login to borrow a book!");
-      return;
-    }
+  if (!user) {
+    toast.error("Please login to borrow a book!");
+    return;
+  }
 
-    if (!returnDate) {
-      toast.error("Please select a return date!");
-      return;
-    }
+  if (!returnDate) {
+    toast.error("Please select a return date!");
+    return;
+  }
 
-    if (new Date(returnDate) <= new Date(getMinDate())) {
-      toast.error("Please select a valid return date!");
-      return;
-    }
+  if (returnDate < getMinDate()) {
+    toast.error("Please select a valid return date!");
+    return;
+  }
 
-    if (availableCopies <= 0) {
-      toast.error("This book is not available!");
-      return;
-    }
+  if (availableCopies <= 0) {
+    toast.error("This book is not available!");
+    return;
+  }
 
+  try {
+    setLoading(true);
+
+    const res = await fetch("http://localhost:8000/borrows", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        bookId: book._id,
+        bookTitle: book.title,
+        author: book.author,
+        coverImage: book.coverImage,
+        borrowerName: user.name,
+        borrowerEmail: user.email,
+        returnDate,
+      }),
+    });
+
+    const responseText = await res.text();
+
+    let data;
     try {
-      setLoading(true);
-
-      const res = await fetch("http://localhost:8000/borrows", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          bookId: book._id,
-          bookTitle: book.title,
-          author: book.author,
-          coverImage: book.coverImage,
-          borrowerName: user.name,
-          borrowerEmail: user.email,
-          returnDate,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.message || "Failed to borrow book!");
-        return;
-      }
-
-      toast.success("Book borrowed successfully!");
-      setIsOpen(false);
-      setReturnDate("");
-    } catch (error) {
-      console.error(error);
-      toast.error("Something went wrong!");
-    } finally {
-      setLoading(false);
+      data = JSON.parse(responseText);
+    } catch {
+      throw new Error(`Invalid server response: ${responseText}`);
     }
-  };
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to borrow book!");
+    }
+
+    toast.success("Book borrowed successfully!");
+    setIsOpen(false);
+    setReturnDate("");
+
+  } catch (error) {
+    console.error("Borrow Error:", error);
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong!"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <>
