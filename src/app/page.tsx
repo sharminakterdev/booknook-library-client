@@ -2,7 +2,7 @@
 import { HeroSlider } from "@/components/home/HeroSlider";
 import NewArrivals from "@/components/home/NewArrivals";
 import WhyChooseUs from "@/components/home/WhyChooseUs";
-// import HowBorrowingWorks from "@/components/home/HowBorrowingWorks";
+import ReaderReviews from "@/components/home/ReaderReviews";
 
 interface Book {
   _id: string;
@@ -42,7 +42,7 @@ export default async function Home() {
 
        <WhyChooseUs />
 
-      
+      <ReaderReviews />
     </main>
   );
 }
