@@ -52,7 +52,15 @@ const DetailPage = async ({ params }: Props) => {
     throw new Error("Failed to fetch book details");
   }
 
-  const book: Book = await res.json();
+  const rawBook = await res.json();
+
+const book: Book = {
+  ...rawBook,
+  totalCopies: Number(rawBook.totalCopies),
+  availableCopies: Number(
+    rawBook.availableCopies ?? rawBook.totalCopies
+  ),
+};
 
   return (
     <div className="min-h-screen bg-[#F7F7F0] px-5 py-12">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -141,20 +142,23 @@ export default function AddBookPage() {
     setLoading(true);
 
     try {
-      // Updated property name to coverImage as required by backend schema
       const bookData = {
         title: formData.title.trim(),
         author: formData.author.trim(),
         category: formData.category,
         coverImage: formData.imageUrl.trim(),
         description: formData.description.trim(),
+
+        // Available Copies Challenge
         totalCopies: copies,
+        availableCopies: copies,
+
         userName: user.name || "",
         email: user.email,
         createdAt: new Date().toISOString(),
       };
 
-      const response = await fetch(`${API_URL}/add-book`, {
+      const response = await fetch(`${API_URL}/add-books`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -409,12 +413,17 @@ export default function AddBookPage() {
                     type="number"
                     name="totalCopies"
                     min="1"
+                    step="1"
                     value={formData.totalCopies}
                     onChange={handleChange}
                     placeholder="Enter copies"
                     className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:ring-2 focus:ring-[#E5EDE8]"
                     required
                   />
+
+                  <p className="mt-2 text-xs text-gray-400">
+                    Available copies will initially match total copies.
+                  </p>
                 </div>
               </div>
 

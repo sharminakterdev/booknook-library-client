@@ -1,8 +1,13 @@
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { authClient } from "@/lib/auth-client";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface Book {
   _id: string;
@@ -13,19 +18,88 @@ interface Book {
   availableCopies?: number;
 }
 
+interface BorrowRecord {
+  _id: string;
+  bookId: string;
+  borrowerEmail: string;
+  status?: string;
+}
+
 interface Props {
   book: Book;
 }
 
 const BorrowButton = ({ book }: Props) => {
+  const router = useRouter();
+
   const { data: session, isPending } = authClient.useSession();
 
   const [isOpen, setIsOpen] = useState(false);
   const [returnDate, setReturnDate] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // No Double Borrow states
+  const [alreadyBorrowed, setAlreadyBorrowed] = useState(false);
+  const [checkingBorrow, setCheckingBorrow] = useState(true);
+
   const user = session?.user;
-  const availableCopies = book.availableCopies ?? book.totalCopies;
+
+ const availableCopies = Number(
+  book.availableCopies ?? book.totalCopies
+);
+
+  // Check whether the user already borrowed this book
+  useEffect(() => {
+    let active = true;
+
+    const checkExistingBorrow = async () => {
+      if (isPending) return;
+
+      if (!user?.email) {
+        setAlreadyBorrowed(false);
+        setCheckingBorrow(false);
+        return;
+      }
+
+      try {
+        setCheckingBorrow(true);
+
+        const res = await fetch(
+          `${API_URL}/borrows?email=${encodeURIComponent(user.email)}`,
+          { cache: "no-store" }
+        );
+
+        if (!res.ok) {
+          throw new Error("Failed to check borrow status");
+        }
+
+        const borrows: BorrowRecord[] = await res.json();
+
+        const exists = borrows.some(
+  (borrow) =>
+    String(borrow.bookId) === String(book._id) &&
+    borrow.borrowerEmail?.toLowerCase() === user.email?.toLowerCase()
+);
+    
+
+        if (active) {
+          setAlreadyBorrowed(exists);
+        }
+      } catch (error) {
+        console.error("Borrow Check Error:", error);
+      } finally {
+        if (active) {
+          setCheckingBorrow(false);
+        }
+      }
+    };
+
+    checkExistingBorrow();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.email, book._id, isPending]);
 
   const getMinDate = () => {
     const date = new Date();
@@ -38,94 +112,147 @@ const BorrowButton = ({ book }: Props) => {
     return `${year}-${month}-${day}`;
   };
 
+  // Borrow Book
   const handleBorrow = async () => {
-  if (!user) {
-    toast.error("Please login to borrow a book!");
-    return;
-  }
+    if (!user) {
+      toast.error("Please login to borrow a book!");
+      return;
+    }
 
-  if (!returnDate) {
-    toast.error("Please select a return date!");
-    return;
-  }
+    if (alreadyBorrowed) {
+      toast.error("You have already borrowed this book!");
+      return;
+    }
 
-  if (returnDate < getMinDate()) {
-    toast.error("Please select a valid return date!");
-    return;
-  }
+    if (!returnDate) {
+      toast.error("Please select a return date!");
+      return;
+    }
 
-  if (availableCopies <= 0) {
-    toast.error("This book is not available!");
-    return;
-  }
+    if (returnDate < getMinDate()) {
+      toast.error("Please select a valid return date!");
+      return;
+    }
 
-  try {
-    setLoading(true);
+    if (availableCopies <= 0) {
+      toast.error("This book is not available!");
+      return;
+    }
 
-    const res = await fetch("http://localhost:8000/borrows", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        bookId: book._id,
-        bookTitle: book.title,
-        author: book.author,
-        coverImage: book.coverImage,
-        borrowerName: user.name,
-        borrowerEmail: user.email,
-        returnDate,
-      }),
-    });
-
-    const responseText = await res.text();
-
-    let data;
     try {
-      data = JSON.parse(responseText);
-    } catch {
-      throw new Error(`Invalid server response: ${responseText}`);
+      setLoading(true);
+
+      const res = await fetch(`${API_URL}/borrows`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bookId: book._id,
+          bookTitle: book.title,
+          author: book.author,
+          coverImage: book.coverImage,
+          borrowerName: user.name,
+          borrowerEmail: user.email,
+          returnDate,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          setAlreadyBorrowed(true);
+        }
+
+        throw new Error(
+          data?.message || "Failed to borrow book!"
+        );
+      }
+
+      setAlreadyBorrowed(true);
+      setIsOpen(false);
+      setReturnDate("");
+
+      toast.success("Book borrowed successfully!");
+
+      // Refresh book details and available copies
+      router.refresh();
+    } catch (error) {
+      console.error("Borrow Error:", error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong!"
+      );
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to borrow book!");
-    }
+  const unavailable = availableCopies <= 0;
 
-    toast.success("Book borrowed successfully!");
-    setIsOpen(false);
-    setReturnDate("");
-
-  } catch (error) {
-    console.error("Borrow Error:", error);
-
-    toast.error(
-      error instanceof Error
-        ? error.message
-        : "Something went wrong!"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  const buttonDisabled =
+    isPending ||
+    checkingBorrow ||
+    unavailable ||
+    alreadyBorrowed;
 
   return (
     <>
+      {/* Available Copies */}
+      <div className="mt-6 rounded-xl border border-[#E5EDE8] bg-[#F7F7F0] p-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-600">
+            Total Copies
+          </span>
+
+          <span className="font-semibold text-[#153D35]">
+            {book.totalCopies}
+          </span>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-600">
+            Available Copies
+          </span>
+
+          <span
+            className={`font-semibold ${
+              unavailable ? "text-red-500" : "text-[#153D35]"
+            }`}
+          >
+            {availableCopies}
+          </span>
+        </div>
+      </div>
+
       {/* Borrow Button */}
       <button
         type="button"
-        disabled={isPending || availableCopies <= 0}
+        disabled={buttonDisabled}
         onClick={() => {
           if (!user) {
             toast.error("Please login first!");
             return;
           }
 
+          if (alreadyBorrowed) {
+            toast.error("You have already borrowed this book!");
+            return;
+          }
+
           setIsOpen(true);
         }}
-        className="mt-8 w-full rounded-xl bg-[#153D35] py-4 font-semibold text-white transition hover:bg-[#245B4D] disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-4 w-full rounded-xl bg-[#153D35] py-4 font-semibold text-white transition hover:bg-[#245B4D] disabled:cursor-not-allowed disabled:bg-gray-400 disabled:opacity-80"
       >
-        {availableCopies <= 0
-          ? "Currently Unavailable"
+        {isPending || checkingBorrow
+          ? "Checking..."
+          : unavailable
+          ? "Not Available"
+          : alreadyBorrowed
+          ? "Already Borrowed"
           : "Borrow This Book"}
       </button>
 
@@ -153,8 +280,13 @@ const BorrowButton = ({ book }: Props) => {
               <h3 className="font-bold text-[#153D35]">
                 {book.title}
               </h3>
+
               <p className="mt-1 text-sm text-gray-600">
                 By {book.author}
+              </p>
+
+              <p className="mt-2 text-sm text-gray-600">
+                Available Copies: {availableCopies}
               </p>
             </div>
 
@@ -207,7 +339,7 @@ const BorrowButton = ({ book }: Props) => {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 disabled={loading}
-                className="w-1/2 rounded-xl border border-gray-300 py-3 font-semibold text-gray-600 hover:bg-gray-100"
+                className="w-1/2 rounded-xl border border-gray-300 py-3 font-semibold text-gray-600 hover:bg-gray-100 disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -215,8 +347,8 @@ const BorrowButton = ({ book }: Props) => {
               <button
                 type="button"
                 onClick={handleBorrow}
-                disabled={loading}
-                className="w-1/2 rounded-xl bg-[#153D35] py-3 font-semibold text-white hover:bg-[#245B4D] disabled:opacity-60"
+                disabled={loading || unavailable || alreadyBorrowed}
+                className="w-1/2 rounded-xl bg-[#153D35] py-3 font-semibold text-white hover:bg-[#245B4D] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Processing..." : "Confirm Borrow"}
               </button>
