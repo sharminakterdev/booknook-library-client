@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { authClient } from "@/lib/auth-client";
+import { getTokenFromClient } from "@/lib/getTokenFromClient";
 
 const API_URL = "http://localhost:8000";
 
@@ -136,11 +137,13 @@ const MyBookPage = () => {
 
     try {
       setUpdating(true);
+      const token =await getTokenFromClient()
 
       const res = await fetch(`${API_URL}/books/${editingBook._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          authorization:  `Bearer ${token}`
         },
         body: JSON.stringify(formData),
       });
@@ -173,11 +176,17 @@ const MyBookPage = () => {
 
     try {
       setDeleting(true);
-
+const token =await getTokenFromClient()
       const res = await fetch(`${API_URL}/books/${deletingBook._id}`, {
         method: "DELETE",
+            headers: {
+          "Content-Type": "application/json",
+          authorization:  `Bearer ${token}`
+        },
+        body: JSON.stringify(formData),
       });
 
+    
       if (!res.ok) {
         toast.error("Failed to delete book");
         return;

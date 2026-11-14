@@ -19,6 +19,7 @@ import {
 import { toast } from "react-toastify";
 
 import { authClient } from "@/lib/auth-client";
+import { getTokenFromClient } from "@/lib/getTokenFromClient";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -104,7 +105,7 @@ export default function AddBookPage() {
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
-
+   
     if (!user?.email) {
       toast.error("Please login first.");
       router.push("/login");
@@ -157,11 +158,13 @@ export default function AddBookPage() {
         email: user.email,
         createdAt: new Date().toISOString(),
       };
+      const token=await getTokenFromClient()
 
       const response = await fetch(`${API_URL}/add-books`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          authorization:  `Bearer ${token}`
         },
         body: JSON.stringify(bookData),
       });

@@ -1,28 +1,9 @@
-// import Image from 'next/image';
-// import React from 'react';
 
-// const DetailPage = async({params}) => {
-// const {id}=await params
-// const res=await fetch(`http://localhost:8000/books/${id}`)
-// const book =await res.json()
-//     return (
-//         <div>
-//             <div>
-// <Image
-//         src={book.coverImage}
-//         alt=""
-//         height={400}
-//         width={400}
-//       />
-
-//             </div>
-//         </div>
-//     );
-// };
-
-// export default DetailPage ;
 import Image from "next/image";
 import BorrowButton from "@/components/books/BorrowButton";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { getTokenFromServer } from "@/lib/getTokenFromServer";
 
 interface Props {
   params: Promise<{
@@ -43,9 +24,13 @@ interface Book {
 
 const DetailPage = async ({ params }: Props) => {
   const { id } = await params;
-
+  const token=await getTokenFromServer()
   const res = await fetch(`http://localhost:8000/books/${id}`, {
     cache: "no-store",
+    headers:{
+      authorization:  ` Bearer ${token}`
+
+    },
   });
 
   if (!res.ok) {

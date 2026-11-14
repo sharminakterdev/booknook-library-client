@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { authClient } from "@/lib/auth-client";
+import { getTokenFromClient } from "@/lib/getTokenFromClient";
 
 const API_URL = "http://localhost:8000";
 
@@ -35,12 +36,22 @@ export default function MyBorrowsPage() {
       return;
     }
 
-    const fetchBorrows = async () => {
-      try {
-        const res = await fetch(
-          `${API_URL}/borrows?email=${encodeURIComponent(email)}`,
-          { cache: "no-store" }
-        );
+   const fetchBorrows = async () => {
+  try {
+    const token = await getTokenFromClient();
+
+    if (!token) return;
+
+    const res = await fetch(
+      `${API_URL}/borrows?email=${encodeURIComponent(email)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      }
+    );
 
         if (!res.ok) throw new Error("Failed to load borrowed books");
 
@@ -56,19 +67,26 @@ export default function MyBorrowsPage() {
     fetchBorrows();
   }, [email, isPending]);
 
-  const handleReturn = async (id: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to return this book?"
-    );
+const handleReturn = async (id: string) => {
+  const confirmed = window.confirm(
+    "Are you sure you want to return this book?"
+  );
 
-    if (!confirmed) return;
+  if (!confirmed) return;
 
-    try {
-      setReturningId(id);
+  try {
+    setReturningId(id);
 
-      const res = await fetch(`${API_URL}/borrows/${id}`, {
-        method: "DELETE",
-      });
+    const token = await getTokenFromClient();
+
+    if (!token) return;
+
+    const res = await fetch(`${API_URL}/borrows/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
       if (!res.ok) throw new Error("Return failed");
 

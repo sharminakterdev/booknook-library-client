@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { authClient } from "@/lib/auth-client";
+import { getTokenFromClient } from "@/lib/getTokenFromClient";
+
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -64,11 +66,17 @@ const BorrowButton = ({ book }: Props) => {
       try {
         setCheckingBorrow(true);
 
-        const res = await fetch(
-          `${API_URL}/borrows?email=${encodeURIComponent(user.email)}`,
-          { cache: "no-store" }
-        );
 
+const res = await fetch(
+  `${API_URL}/borrows?email=${encodeURIComponent(user.email)}`,
+  {
+    method: "GET",
+    cache: "no-store",
+    headers: {
+    
+    },
+  }
+);
         if (!res.ok) {
           throw new Error("Failed to check borrow status");
         }
@@ -140,12 +148,13 @@ const BorrowButton = ({ book }: Props) => {
     }
 
     try {
+      const token=await getTokenFromClient()
       setLoading(true);
-
       const res = await fetch(`${API_URL}/borrows`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           bookId: book._id,
