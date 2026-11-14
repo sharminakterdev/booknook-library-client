@@ -56,6 +56,7 @@ export default function AddBookPage() {
     imageUrl: "",
   });
 
+  const [customCategory, setCustomCategory] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [imageError, setImageError] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -105,7 +106,7 @@ export default function AddBookPage() {
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
-   
+
     if (!user?.email) {
       toast.error("Please login first.");
       router.push("/login");
@@ -123,6 +124,16 @@ export default function AddBookPage() {
       return;
     }
 
+    // Validate custom category
+    if (
+      formData.category === "Others" &&
+      !customCategory.trim()
+    ) {
+      toast.error("Please enter your category.");
+      return;
+    }
+
+    // Validate image URL
     if (!/^https?:\/\/.+/i.test(formData.imageUrl.trim())) {
       toast.error("Please enter a valid image URL.");
       return;
@@ -143,10 +154,16 @@ export default function AddBookPage() {
     setLoading(true);
 
     try {
+      // Use custom category when Others is selected
+      const finalCategory =
+        formData.category === "Others"
+          ? customCategory.trim()
+          : formData.category;
+
       const bookData = {
         title: formData.title.trim(),
         author: formData.author.trim(),
-        category: formData.category,
+        category: finalCategory,
         coverImage: formData.imageUrl.trim(),
         description: formData.description.trim(),
 
@@ -158,13 +175,20 @@ export default function AddBookPage() {
         email: user.email,
         createdAt: new Date().toISOString(),
       };
-      const token=await getTokenFromClient()
+
+      // Get JWT token
+      const token = await getTokenFromClient();
+
+      if (!token) {
+        toast.error("Authentication token not found.");
+        return;
+      }
 
       const response = await fetch(`${API_URL}/add-books`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          authorization:  `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(bookData),
       });
@@ -179,6 +203,7 @@ export default function AddBookPage() {
 
       toast.success("Book added successfully!");
 
+      // Reset form
       setFormData({
         title: "",
         author: "",
@@ -188,13 +213,14 @@ export default function AddBookPage() {
         imageUrl: "",
       });
 
+      setCustomCategory("");
       setPreviewUrl("");
       setImageError(false);
 
       router.push("/my-books");
       router.refresh();
     } catch (error) {
-      console.error(error);
+      console.error("Add book error:", error);
 
       toast.error(
         error instanceof Error
@@ -405,6 +431,20 @@ export default function AddBookPage() {
                       </option>
                     ))}
                   </select>
+
+                  {/* Custom Category Input */}
+                  {formData.category === "Others" && (
+                    <input
+                      type="text"
+                      value={customCategory}
+                      onChange={(e) =>
+                        setCustomCategory(e.target.value)
+                      }
+                      placeholder="Enter your category"
+                      className="mt-3 w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:bg-white focus:ring-2 focus:ring-[#E5EDE8]"
+                      required
+                    />
+                  )}
                 </div>
 
                 <div>

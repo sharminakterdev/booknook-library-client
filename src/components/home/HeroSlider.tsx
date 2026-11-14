@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -54,10 +55,14 @@ export function HeroSlider() {
           <SwiperSlide key={index}>
             <div
               className="relative flex min-h-[480px] items-center bg-cover bg-center px-6 py-20 md:min-h-[580px] md:px-16 lg:px-24"
-              style={{ backgroundImage: `url(${slide.image})` }}
+              style={{
+                backgroundImage: `url(${slide.image})`,
+              }}
             >
+              {/* Background Overlay */}
               <div className="absolute inset-0 bg-gradient-to-r from-[#102E25]/95 via-[#102E25]/75 to-[#102E25]/10" />
 
+              {/* Slide Content */}
               <div className="relative z-10 max-w-2xl text-white">
                 <p className="mb-5 text-sm font-semibold tracking-[4px] text-[#C5E5A0]">
                   {slide.subtitle}
@@ -80,6 +85,7 @@ export function HeroSlider() {
                 </Link>
               </div>
 
+              {/* Slide Number */}
               <div className="absolute bottom-12 right-10 z-10 hidden text-7xl font-bold text-white/30 md:block">
                 0{index + 1}
               </div>
@@ -87,26 +93,6 @@ export function HeroSlider() {
           </SwiperSlide>
         ))}
       </Swiper>
-
-      <style jsx global>{`
-        .book-hero-swiper .swiper-pagination {
-          bottom: 25px !important;
-        }
-
-        .book-hero-swiper .swiper-pagination-bullet {
-          width: 28px;
-          height: 5px;
-          border-radius: 10px;
-          background: #ffffff;
-          opacity: 0.5;
-        }
-
-        .book-hero-swiper .swiper-pagination-bullet-active {
-          width: 45px;
-          background: #c5e5a0;
-          opacity: 1;
-        }
-      `}</style>
     </section>
   );
 }

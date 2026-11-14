@@ -128,3 +128,24 @@
     @apply font-sans;
   }
 }
+
+
+/* BookNook Hero Slider Pagination */
+
+.book-hero-swiper .swiper-pagination {
+  bottom: 25px !important;
+}
+
+.book-hero-swiper .swiper-pagination-bullet {
+  width: 28px;
+  height: 5px;
+  border-radius: 10px;
+  background: #ffffff;
+  opacity: 0.5;
+}
+
+.book-hero-swiper .swiper-pagination-bullet-active {
+  width: 45px;
+  background: #c5e5a0;
+  opacity: 1;
+}
