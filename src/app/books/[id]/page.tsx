@@ -1,8 +1,8 @@
 
+
 import Image from "next/image";
+import { Suspense } from "react";
 import BorrowButton from "@/components/books/BorrowButton";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { getTokenFromServer } from "@/lib/getTokenFromServer";
 
 interface Props {
@@ -22,16 +22,19 @@ interface Book {
   availableCopies?: number;
 }
 
-const DetailPage = async ({ params }: Props) => {
+const DetailContent = async ({ params }: Props) => {
   const { id } = await params;
-  const token=await getTokenFromServer()
-  const res = await fetch(`http://localhost:8000/books/${id}`, {
-    cache: "no-store",
-    headers:{
-      authorization:  ` Bearer ${token}`
+  const token = await getTokenFromServer();
 
-    },
-  });
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/books/${id}`,
+    {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
   if (!res.ok) {
     throw new Error("Failed to fetch book details");
@@ -39,20 +42,18 @@ const DetailPage = async ({ params }: Props) => {
 
   const rawBook = await res.json();
 
-const book: Book = {
-  ...rawBook,
-  totalCopies: Number(rawBook.totalCopies),
-  availableCopies: Number(
-    rawBook.availableCopies ?? rawBook.totalCopies
-  ),
-};
+  const book: Book = {
+    ...rawBook,
+    totalCopies: Number(rawBook.totalCopies),
+    availableCopies: Number(
+      rawBook.availableCopies ?? rawBook.totalCopies
+    ),
+  };
 
   return (
     <div className="min-h-screen bg-[#F7F7F0] px-5 py-12">
       <div className="mx-auto max-w-5xl rounded-3xl bg-white p-6 shadow-lg md:p-10">
         <div className="grid items-center gap-10 md:grid-cols-2">
-
-          {/* Book Image */}
           <div className="flex justify-center rounded-2xl bg-[#F7F7F0] p-8">
             <Image
               src={book.coverImage}
@@ -63,7 +64,6 @@ const book: Book = {
             />
           </div>
 
-          {/* Book Information */}
           <div>
             <span className="rounded-full bg-[#E8EFE9] px-4 py-2 text-sm font-semibold text-[#153D35]">
               {book.category}
@@ -102,11 +102,10 @@ const book: Book = {
                 <span className="font-semibold text-[#153D35]">
                   Available Copies:
                 </span>{" "}
-                {book.availableCopies ?? book.totalCopies}
+                {book.availableCopies}
               </p>
             </div>
 
-            {/* Borrow Button & Modal */}
             <BorrowButton book={book} />
           </div>
         </div>
@@ -115,4 +114,10 @@ const book: Book = {
   );
 };
 
-export default DetailPage;
+export default function DetailPage({ params }: Props) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F7F7F0]" />}>
+      <DetailContent params={params} />
+    </Suspense>
+  );
+}

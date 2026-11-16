@@ -8,8 +8,7 @@ import { authClient } from "@/lib/auth-client";
 import { getTokenFromClient } from "@/lib/getTokenFromClient";
 
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 
 interface Book {
   _id: string;
@@ -66,14 +65,14 @@ const BorrowButton = ({ book }: Props) => {
       try {
         setCheckingBorrow(true);
 
-
+const token = await getTokenFromClient();
 const res = await fetch(
-  `${API_URL}/borrows?email=${encodeURIComponent(user.email)}`,
+  `${process.env.NEXT_PUBLIC_API_URL}/borrows?email=${encodeURIComponent(user.email)}`,
   {
     method: "GET",
     cache: "no-store",
     headers: {
-    
+     Authorization: `Bearer ${token}`,
     },
   }
 );
@@ -150,7 +149,7 @@ const res = await fetch(
     try {
       const token=await getTokenFromClient()
       setLoading(true);
-      const res = await fetch(`${API_URL}/borrows`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/borrows`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

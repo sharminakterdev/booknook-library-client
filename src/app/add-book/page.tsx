@@ -21,8 +21,7 @@ import { toast } from "react-toastify";
 import { authClient } from "@/lib/auth-client";
 import { getTokenFromClient } from "@/lib/getTokenFromClient";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 
 const categories = [
   "Fiction",
@@ -184,7 +183,7 @@ export default function AddBookPage() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/add-books`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/add-books`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -347,7 +346,7 @@ export default function AddBookPage() {
                 <BookOpen size={25} className="text-[#C5A66B]" />
 
                 <p className="mt-3 text-sm leading-6 text-white/70">
-                  "A reader lives a thousand lives before he dies."
+                  'A reader lives a thousand lives before he dies.'
                 </p>
 
                 <p className="mt-2 text-xs text-white/40">

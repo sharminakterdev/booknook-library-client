@@ -3,7 +3,7 @@ import { HeroSlider } from "@/components/home/HeroSlider";
 import NewArrivals from "@/components/home/NewArrivals";
 import WhyChooseUs from "@/components/home/WhyChooseUs";
 import ReaderReviews from "@/components/home/ReaderReviews";
-
+export const instant = false;
 interface Book {
   _id: string;
   title: string;
@@ -14,7 +14,7 @@ interface Book {
 
 async function getLatestBooks(): Promise<Book[]> {
   try {
-    const res = await fetch("http://localhost:8000/books/latest", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/books/latest`, {
       cache: "no-store",
     });
 

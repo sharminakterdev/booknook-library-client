@@ -1,6 +1,6 @@
-
 "use client";
 
+import { Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { authClient } from "@/lib/auth-client";
@@ -30,18 +30,20 @@ export default function NavbarWrapper() {
   };
 
   return (
-    <Navbar
-      user={
-        session?.user
-          ? {
-              name: session.user.name ?? null,
-              email: session.user.email ?? null,
-              image: session.user.image ?? null,
-            }
-          : undefined
-      }
-      isLoggedIn={!isPending && !!session?.user}
-      onLogout={handleLogout}
-    />
+    <Suspense fallback={<div className="h-16" />}>
+      <Navbar
+        user={
+          session?.user
+            ? {
+                name: session.user.name ?? null,
+                email: session.user.email ?? null,
+                image: session.user.image ?? null,
+              }
+            : undefined
+        }
+        isLoggedIn={!isPending && !!session?.user}
+        onLogout={handleLogout}
+      />
+    </Suspense>
   );
 }

@@ -82,7 +82,7 @@ const ReaderReviews = () => {
 
                 {/* Review Text */}
                 <p className="mt-6 text-base leading-relaxed text-gray-600 font-normal">
-                  "{item.review}"
+                  {item.review}
                 </p>
               </div>
 

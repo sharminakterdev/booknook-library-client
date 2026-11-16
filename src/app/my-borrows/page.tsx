@@ -7,7 +7,6 @@ import { toast } from "react-toastify";
 import { authClient } from "@/lib/auth-client";
 import { getTokenFromClient } from "@/lib/getTokenFromClient";
 
-const API_URL = "http://localhost:8000";
 
 interface Borrow {
   _id: string;
@@ -43,7 +42,7 @@ export default function MyBorrowsPage() {
     if (!token) return;
 
     const res = await fetch(
-      `${API_URL}/borrows?email=${encodeURIComponent(email)}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/borrows?email=${encodeURIComponent(email)}`,
       {
         method: "GET",
         headers: {
@@ -81,7 +80,7 @@ const handleReturn = async (id: string) => {
 
     if (!token) return;
 
-    const res = await fetch(`${API_URL}/borrows/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/borrows/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,

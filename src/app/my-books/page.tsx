@@ -18,7 +18,7 @@ import { toast } from "react-toastify";
 import { authClient } from "@/lib/auth-client";
 import { getTokenFromClient } from "@/lib/getTokenFromClient";
 
-const API_URL = "http://localhost:8000";
+
 
 interface Book {
   _id: string;
@@ -75,9 +75,15 @@ const MyBookPage = () => {
 
     const fetchBooks = async () => {
       try {
+        const token = await getTokenFromClient();
         const res = await fetch(
-          `${API_URL}/my-books/${encodeURIComponent(user.email)}`,
-          { cache: "no-store" }
+          `${process.env.NEXT_PUBLIC_API_URL}/my-books/${encodeURIComponent(user.email)}`,
+          { cache: "no-store",
+
+             headers: {
+      Authorization: `Bearer ${token}`,
+           }
+          }
         );
 
         const data = await res.json();
@@ -139,7 +145,7 @@ const MyBookPage = () => {
       setUpdating(true);
       const token =await getTokenFromClient()
 
-      const res = await fetch(`${API_URL}/books/${editingBook._id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/books/${editingBook._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -177,7 +183,7 @@ const MyBookPage = () => {
     try {
       setDeleting(true);
 const token =await getTokenFromClient()
-      const res = await fetch(`${API_URL}/books/${deletingBook._id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/books/${deletingBook._id}`, {
         method: "DELETE",
             headers: {
           "Content-Type": "application/json",

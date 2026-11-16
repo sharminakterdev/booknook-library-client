@@ -64,8 +64,7 @@ function getLanguage(language: string) {
   return aliases[name] ?? null
 }
 
-// Loads a language and returns a highlighter for it, or null for a language
-// that is not listed.
+
 export async function loadHighlighter(language: string) {
   const lang = getLanguage(language)
 
