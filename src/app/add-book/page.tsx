@@ -1,614 +1,274 @@
-
-"use client";
-
-import { useState } from "react";
+import React, { useState } from "react";
+import { BookOpen, Image as LucideImage } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectLabel } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  BookOpen,
-  Image as ImageIcon,
-  Plus,
-  Sparkles,
-  Library,
-  UserRound,
-  CheckCircle2,
-  Link as LinkIcon,
-  X,
-} from "lucide-react";
-import { toast } from "react-toastify";
-
-import { authClient } from "@/lib/auth-client";
-import { getTokenFromClient } from "@/lib/getTokenFromClient";
-
-
 
 const categories = [
   "Fiction",
-  "Science",
+  "Non-Fiction",
+  "Science Fiction",
+  "Fantasy",
+  "Mystery",
+  "Biography",
   "History",
-  "Kids",
-  "Others",
+  "Children's Books",
+  "Young Adult",
+  "Poetry",
 ];
 
-type FormDataType = {
-  title: string;
-  author: string;
-  category: string;
-  description: string;
-  totalCopies: string;
-  imageUrl: string;
-};
-
 export default function AddBookPage() {
-  const router = useRouter();
-
-  const { data: session, isPending } = authClient.useSession();
-  const user = session?.user;
-
-  const [formData, setFormData] = useState<FormDataType>({
+  const [formData, setFormData] = useState({
     title: "",
     author: "",
     category: "",
+    coverImage: "",
     description: "",
     totalCopies: "1",
-    imageUrl: "",
   });
 
-  const [customCategory, setCustomCategory] = useState("");
-  const [previewUrl, setPreviewUrl] = useState("");
-  const [imageError, setImageError] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Handle input changes
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData({ ...formData, [name]: value });
   };
 
-  // Handle image URL and preview
-  const handleImageUrlChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const url = e.target.value;
-
-    setFormData((prev) => ({
-      ...prev,
-      imageUrl: url,
-    }));
-
-    setPreviewUrl(url.trim());
-    setImageError(false);
-  };
-
-  // Remove image URL
-  const removeImage = () => {
-    setFormData((prev) => ({
-      ...prev,
-      imageUrl: "",
-    }));
-
-    setPreviewUrl("");
-    setImageError(false);
-  };
-
-  // Submit book
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!user?.email) {
-      toast.error("Please login first.");
-      router.push("/login");
-      return;
-    }
-
-    if (
-      !formData.title.trim() ||
-      !formData.author.trim() ||
-      !formData.category ||
-      !formData.description.trim() ||
-      !formData.imageUrl.trim()
-    ) {
-      toast.error("Please fill in all required fields.");
-      return;
-    }
-
-    // Validate custom category
-    if (
-      formData.category === "Others" &&
-      !customCategory.trim()
-    ) {
-      toast.error("Please enter your category.");
-      return;
-    }
-
-    // Validate image URL
-    if (!/^https?:\/\/.+/i.test(formData.imageUrl.trim())) {
-      toast.error("Please enter a valid image URL.");
-      return;
-    }
-
-    const copies = Number(formData.totalCopies);
-
-    if (!Number.isInteger(copies) || copies < 1) {
-      toast.error("Total copies must be at least 1.");
-      return;
-    }
-
-    if (imageError) {
-      toast.error("Please provide a working book cover image URL.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Use custom category when Others is selected
-      const finalCategory =
-        formData.category === "Others"
-          ? customCategory.trim()
-          : formData.category;
-
-      const bookData = {
-        title: formData.title.trim(),
-        author: formData.author.trim(),
-        category: finalCategory,
-        coverImage: formData.imageUrl.trim(),
-        description: formData.description.trim(),
-
-        // Available Copies Challenge
-        totalCopies: copies,
-        availableCopies: copies,
-
-        userName: user.name || "",
-        email: user.email,
-        createdAt: new Date().toISOString(),
-      };
-
-      // Get JWT token
-      const token = await getTokenFromClient();
-
-      if (!token) {
-        toast.error("Authentication token not found.");
-        return;
-      }
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/add-books`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(bookData),
-      });
-
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(
-          result?.message || "Failed to add book."
-        );
-      }
-
-      toast.success("Book added successfully!");
-
-      // Reset form
-      setFormData({
-        title: "",
-        author: "",
-        category: "",
-        description: "",
-        totalCopies: "1",
-        imageUrl: "",
-      });
-
-      setCustomCategory("");
-      setPreviewUrl("");
-      setImageError(false);
-
-      router.push("/my-books");
-      router.refresh();
-    } catch (error) {
-      console.error("Add book error:", error);
-
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong."
-      );
-    } finally {
-      setLoading(false);
-    }
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+    }, 1500);
   };
-
-  // Loading
-  if (isPending) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F7F7F0]">
-        <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#153D35] border-t-transparent" />
-          <p className="mt-4 text-sm text-gray-500">
-            Loading...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Login required
-  if (!user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F7F7F0] px-4">
-        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
-          <BookOpen className="mx-auto h-12 w-12 text-[#153D35]" />
-
-          <h2 className="mt-5 text-2xl font-bold text-[#153D35]">
-            Login Required
-          </h2>
-
-          <p className="mt-2 text-gray-500">
-            Please login to add a new book to BookNook.
-          </p>
-
-          <Link
-            href="/login?callbackUrl=/add-book"
-            className="mt-6 inline-flex rounded-xl bg-[#153D35] px-6 py-3 font-semibold text-white transition hover:bg-[#B18A4A]"
-          >
-            Go to Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <main className="min-h-screen bg-[#F7F7F0] px-4 py-10 md:px-8">
-      <div className="mx-auto max-w-6xl">
+    <div className="flex-1 bg-background py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto w-full">
+        {/* Book Cover Preview Area */}
+        <div className="mb-8 text-center">
+          <label className="block text-sm font-medium text-foreground/80 mb-2">
+            Book Cover Preview
+          </label>
+          <div className="relative">
+            {previewUrl ? (
+              <img
+                src={previewUrl}
+                alt="Book cover preview"
+                width={200}
+                height={300}
+                className="rounded-xl object-cover border border-border"
+              />
+            ) : (
+              <div
+                className="flex items-center justify-center h-64 w-full rounded-xl border-2 border-border border-gray-200 bg-gradient-to-br from-background/50 to-muted/50 cursor-pointer hover:border-teal-400/50 transition-colors"
+                onClick={() => {}}
+              >
+                <BookOpen
+                  className="w-16 h-16 text-teal-400/50"
+                  style={{ rotate: '45deg' }}
+                />
+                <span className="text-sm text-teal-400/60">
+                  Add a book cover image to preview here
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
 
-        {/* Back navigation */}
-        <Link
-          href="/"
-          className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition hover:text-[#153D35]"
+        {/* Form Card */}
+        <form
+          className="bg-card rounded-2xl shadow-lg border border-border p-6 sm:p-8 lg:p-10"
+          onSubmit={handleSubmit}
         >
-          <ArrowLeft size={17} />
-          Back to Home
-        </Link>
+          <h2 className="text-2xl font-bold text-foreground mb-1">
+            Add a New Book
+          </h2>
+          <p className="text-sm text-foreground/60 mb-8">
+            Expand your library with another great read.
+          </p>
 
-        {/* Heading */}
-        <div className="mb-8">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#A58B54]">
-            <Sparkles size={16} />
-            YOUR DIGITAL LIBRARY
+          {/* Book Title */}
+          <div className="mb-4">
+            <label htmlFor="bookTitle" className="block text-sm font-medium text-foreground/80 mb-1.5">
+              Book Title
+            </label>
+            <Input
+              id="bookTitle"
+              name="title"
+              type="text"
+              placeholder="Enter book title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+            />
           </div>
 
-          <h1 className="text-3xl font-bold tracking-tight text-[#153D35] md:text-4xl">
-            Add a New Book
-          </h1>
+          {/* Author Name */}
+          <div className="mb-4">
+            <label htmlFor="authorName" className="block text-sm font-medium text-foreground/80 mb-1.5">
+              Author Name
+            </label>
+            <Input
+              id="authorName"
+              name="author"
+              type="text"
+              placeholder="Enter author name"
+              value={formData.author}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-          <p className="mt-3 max-w-xl text-gray-500">
-            Share your favorite books with the BookNook community.
-            Add the details and grow your library.
-          </p>
-        </div>
-
-        <div className="grid gap-8 lg:grid-cols-[0.8fr_1.5fr]">
-
-          {/* Information Panel */}
-          <aside className="relative overflow-hidden rounded-3xl bg-[#153D35] p-8 text-white">
-            <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-white/5" />
-            <div className="absolute -bottom-20 -left-12 h-64 w-64 rounded-full bg-white/5" />
-
-            <div className="relative z-10">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
-                <Library size={29} />
-              </div>
-
-              <h2 className="mt-8 text-2xl font-bold leading-snug">
-                Every book has a story.
-                <br />
-                Share yours.
-              </h2>
-
-              <p className="mt-4 leading-7 text-white/65">
-                Add books to your collection and help other readers
-                discover their next favorite story.
-              </p>
-
-              <div className="mt-10 space-y-5">
-                {[
-                  "Add your book details",
-                  "Provide a book cover URL",
-                  "Share with other readers",
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3">
-                    <CheckCircle2
-                      size={19}
-                      className="shrink-0 text-[#C5A66B]"
-                    />
-                    <span className="text-sm text-white/85">
-                      {item}
-                    </span>
-                  </div>
+          {/* Category Select */}
+          <div className="mb-4">
+            <label htmlFor="category" className="block text-sm font-medium text-foreground/80 mb-1.5">
+              Category
+            </label>
+            <Select
+              id="category"
+              name="category"
+              value={formData.category ?? ""}
+              onValueChange={value => setFormData({ ...formData, category: value === null ? "" : value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+                <svg
+                  className="h-4 w-4 text-muted-foreground pointer-events-none"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M9 13l3 3 3-3m-4.5 3.5l4.5-4.5L9.5 3 3 9.5l4.5 4.5M5 9v5h5l-5 5-5-5-5 5z" />
+                </svg>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectLabel>Choose a category</SelectLabel>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
                 ))}
-              </div>
+              </SelectContent>
+            </Select>
+          </div>
 
-              <div className="mt-12 rounded-2xl border border-white/10 bg-white/5 p-5">
-                <BookOpen size={25} className="text-[#C5A66B]" />
-
-                <p className="mt-3 text-sm leading-6 text-white/70">
-                  'A reader lives a thousand lives before he dies.'
-                </p>
-
-                <p className="mt-2 text-xs text-white/40">
-                  — George R. R. Martin
-                </p>
-              </div>
-            </div>
-          </aside>
-
-          {/* Form */}
-          <section className="rounded-3xl border border-[#E8E5DA] bg-white p-6 shadow-sm md:p-9">
-            <div className="mb-7 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E5EDE8] text-[#153D35]">
-                <Plus size={23} />
-              </div>
-
-              <div>
-                <h2 className="text-xl font-bold text-[#153D35]">
-                  Book Information
-                </h2>
-                <p className="text-sm text-gray-400">
-                  Enter the details below
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-
-              {/* Title and Author */}
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Book Title *
-                  </label>
-
-                  <input
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    placeholder="Enter book title"
-                    className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:bg-white focus:ring-2 focus:ring-[#E5EDE8]"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Author Name *
-                  </label>
-
-                  <input
-                    name="author"
-                    value={formData.author}
-                    onChange={handleChange}
-                    placeholder="Enter author name"
-                    className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:bg-white focus:ring-2 focus:ring-[#E5EDE8]"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Category and Copies */}
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Category *
-                  </label>
-
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:ring-2 focus:ring-[#E5EDE8]"
-                    required
-                  >
-                    <option value="">Select category</option>
-
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Custom Category Input */}
-                  {formData.category === "Others" && (
-                    <input
-                      type="text"
-                      value={customCategory}
-                      onChange={(e) =>
-                        setCustomCategory(e.target.value)
-                      }
-                      placeholder="Enter your category"
-                      className="mt-3 w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:bg-white focus:ring-2 focus:ring-[#E5EDE8]"
-                      required
-                    />
-                  )}
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Total Copies *
-                  </label>
-
-                  <input
-                    type="number"
-                    name="totalCopies"
-                    min="1"
-                    step="1"
-                    value={formData.totalCopies}
-                    onChange={handleChange}
-                    placeholder="Enter copies"
-                    className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:ring-2 focus:ring-[#E5EDE8]"
-                    required
-                  />
-
-                  <p className="mt-2 text-xs text-gray-400">
-                    Available copies will initially match total copies.
-                  </p>
-                </div>
-              </div>
-
-              {/* Image URL */}
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Book Cover Image URL *
-                </label>
-
-                <div className="relative">
-                  <LinkIcon
-                    size={18}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                  />
-
-                  <input
-                    type="url"
-                    name="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={handleImageUrlChange}
-                    placeholder="Paste your book image URL here..."
-                    className="w-full rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#153D35] focus:bg-white focus:ring-2 focus:ring-[#E5EDE8]"
-                    required
-                  />
-                </div>
-
-                <p className="mt-2 text-xs text-gray-400">
-                  Paste an image URL to see the cover preview.
-                </p>
-              </div>
-
-              {/* Image Preview */}
-              {previewUrl && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-sm font-semibold text-gray-700">
-                      Book Cover Preview
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={removeImage}
-                      className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700"
-                    >
-                      <X size={15} />
-                      Remove
-                    </button>
-                  </div>
-
-                  <div className="relative flex h-64 items-center justify-center overflow-hidden rounded-2xl border border-[#E8E5DA] bg-[#F7F7F0] p-4">
-                    {imageError ? (
-                      <div className="text-center text-sm text-red-500">
-                        <ImageIcon className="mx-auto mb-2" size={30} />
-                        Image could not be loaded. Check the URL.
-                      </div>
-                    ) : (
-                      <img
-                        src={previewUrl}
-                        alt="Book cover preview"
-                        className="h-full max-w-full object-contain"
-                        onLoad={() => setImageError(false)}
-                        onError={() => setImageError(true)}
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Description */}
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Book Description *
-                </label>
-
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="Write a short description about this book..."
-                  className="w-full resize-none rounded-xl border border-[#E8E5DA] bg-[#F7F7F0] px-4 py-3 text-sm outline-none transition focus:border-[#153D35] focus:bg-white focus:ring-2 focus:ring-[#E5EDE8]"
-                  required
-                />
-              </div>
-
-              {/* User Information */}
-              <div className="rounded-2xl border border-[#E5EDE8] bg-[#F7F7F0] p-5">
-                <div className="mb-4 flex items-center gap-2">
-                  <UserRound size={18} className="text-[#153D35]" />
-                  <h3 className="text-sm font-bold text-gray-800">
-                    Added By
-                  </h3>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-gray-500">
-                      Your Name
-                    </label>
-
-                    <input
-                      value={user.name || ""}
-                      readOnly
-                      className="w-full rounded-lg border border-[#E8E5DA] bg-white px-3 py-2.5 text-sm text-gray-600 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-gray-500">
-                      Your Email
-                    </label>
-
-                    <input
-                      value={user.email || ""}
-                      readOnly
-                      className="w-full rounded-lg border border-[#E8E5DA] bg-white px-3 py-2.5 text-sm text-gray-600 outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#153D35] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#B18A4A] disabled:cursor-not-allowed disabled:opacity-60"
+          {/* Book Cover Image URL */}
+          <div className="mb-4">
+            <label htmlFor="coverImage" className="block text-sm font-medium text-foreground/80 mb-1.5">
+              Book Cover Image URL
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                id="coverImage"
+                name="coverImage"
+                type="text"
+                placeholder="Enter image URL"
+                value={formData.coverImage}
+                onChange={handleChange}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                className="p-2 rounded-md hover:bg-teal-50 hover:text-teal-600 transition-colors"
+                onClick={() => {
+                  // Open URL input focus
+                  const input = document.getElementById("coverImage") as HTMLInputElement;
+                  input?.focus();
+                }}
               >
-                {loading ? (
-                  <>
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Adding Book...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={19} />
-                    Add Book to Library
-                  </>
-                )}
-              </button>
-            </form>
-          </section>
-        </div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M18.224 8.95a8.81 8.81 0 0 0-2.72-1.566 5.496 5.496 0 0 0-3.163 .816 9.592 9.592 0 0 0-6.846 .507 8.82 8.82 0 1 0-4.294-1.888 5.51 5.51 0 0 0-5.023 1.574 9.6 9.6 0 0 0-2.173 .65 8.835 8.835 0 0 0-2.643 .387 5.486 5.486 0 0 0-1.685 .917 9.63 9.63 0 0 0-1.087 2.318 8.807 8.807 0 0 0 .652 3.173 5.493 5.493 0 0 0 .97 2.06 9.637 9.637 0 0 0 2.318 1.095 8.823 8.823 0 0 0 3.088-.31 5.49 5.49 0 0 0 1.888-2.032 5.491 5.491 0 0 0 .648-3.471 9.596 9.596 0 0 0-.518-3.655A8.805 8.805 0 0 0 2.72 4.268a5.49 5.49 0 0 0 .816-3.163 8.815 8.815 0 0 0-1.566-2.722zM9.15 12.618a1.162 1.162 0 1 1 0-2.324 1.162 1.162 0 0 1 0 2.324zm1.6 2.05a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5zm5.485 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5zM12 .75a.75.75 0 0 0 0 1.5.75.75 0 0 0 0-1.5zm4.083 1.735a.75.75 0 0 0-1.09-.533.75.75 0 0 0-.534-.306 7.247 7.247 0 0 0-1.379 .198 7.27 7.27 0 0 0-.085 1.818 7.247 7.247 0 0 0 .193 1.557.75.75 0 0 0 .36 .643 7.234 7.234 0 0 0 1.065 .06 7.262 7.262 0 0 0 1.247-.141 7.236 7.236 0 0 0 .337-.738A7.25 7.25 0 0 0 16.16 9.06z" />
+                </svg>
+              </Button>
+            </div>
+            {formData.coverImage && (
+              <p className="mt-2 text-xs text-teal-400">
+                Preview: {formData.coverImage.substring(0, 50)}${formData.coverImage.length > 50 ? "..." : ""}
+              </p>
+            )}
+          </div>
+
+          {/* Short Description */}
+          <div className="mb-6">
+            <label htmlFor="description" className="block text-sm font-medium text-foreground/80 mb-1.5">
+              Short Description
+            </label>
+            <Textarea
+              id="description"
+              name="description"
+              rows={3}
+              placeholder="Enter a short description of the book..."
+              value={formData.description}
+              onChange={handleChange}
+            />
+          </div>
+
+          {/* Total Copies */}
+          <div className="mb-8 grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="totalCopies" className="block text-sm font-medium text-foreground/80 mb-1.5">
+                Total Copies
+              </label>
+              <Input
+                id="totalCopies"
+                name="totalCopies"
+                type="number"
+                min="1"
+                value={formData.totalCopies}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4 pt-8 border-t border-border">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 rounded-lg bg-teal-600 px-6 py-3 text-lg font-medium text-teal-50 hover:bg-teal-500 transition-colors shadow-lg"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm12-2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7 9h2v2h-2v-2zm-2-6h2v6H7v-6zm-2 4h2v2H7v-2zm12-4h-2v2h2v-2zm-6 8h-2v2h2v-2zm2-4h-2v6h2v-6z" />
+              </svg>
+              Add Book
+            </Button>
+            {isSubmitting ? (
+              <span className="flex-1 h-8 rounded-lg bg-teal-50 text-teal-400 text-sm font-medium animate-pulse">Adding...</span>
+            ) : (
+              <Link
+                href="/books"
+                className="flex items-center gap-2 rounded-lg border border-border px-6 py-3 text-lg font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M15 19l-5-5 5-5M5 10l5 5 5-5M10 5l-5 5 5 5" />
+                </svg>
+                Cancel
+              </Link>
+            )}
+          </div>
+        </form>
       </div>
-    </main>
+    </div>
   );
 }
